@@ -1,12 +1,9 @@
 package com.hdactech.util;
 
-import java.io.File;
-import java.io.FileNotFoundException;
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Scanner;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.bitcoinj.core.Base58;
@@ -16,23 +13,40 @@ import org.bouncycastle.crypto.digests.SHA256Digest;
 
 public class Util {
 
-	public static String getFileHash(String filePath) {
+	/**
+	 * 
+	 * @param filePath
+	 * @return docHash
+	 * @throws Exception
+	 */
+	public static String getFileHash(String filePath) throws Exception {
+		InputStream is = null;
+		byte[] docHash = null;
+		StringBuffer tempBuf = new StringBuffer();
+		StringBuffer resultBuf = new StringBuffer();
 
-		File file = new File(filePath);
-		Scanner scan = null;
 		try {
-			scan = new Scanner(file);
-		} catch (FileNotFoundException e1) {
-			e1.printStackTrace();
-		}
-		List<Byte> bFile = new ArrayList<Byte>();
+			is = new FileInputStream(filePath);
+			while (is.available() > 0) {
+				int value = (int) is.read();
+				tempBuf.append(String.format("%02X ", value));
 
-		StringBuffer sb = new StringBuffer();
-		while (scan.hasNext()) {
-			sb.append(scan.nextLine());
-		}
+				if (tempBuf.length() > 40890) {
+					resultBuf.append(tempBuf);
+					tempBuf = new StringBuffer();
+				}
+			}
 
-		byte[] docHash = sha256(sb.toString().getBytes());
+			if (resultBuf.length() == 0) {
+				resultBuf = tempBuf;
+			}
+			docHash = sha256(tempBuf.toString().getBytes("UTF-8"));
+		} catch (Exception e) {
+			throw e;
+		} finally {
+			if (is != null)
+				is.close();
+		}
 
 		return bytesToHex(docHash);
 	}
